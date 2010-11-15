@@ -12,12 +12,11 @@ function _ -> new wrapper it
 # Baseline setup
 # --------------
 
-root = this
+previousUnderbar = @_
 
-previousUnderbar = root._
+root = this import {_}
 
-root     ._ = _
-exports ?._ = _
+exports?._ = _
 
 breaker = StopIteration ? '__break__'
 
@@ -62,7 +61,7 @@ _.reduce = _.foldl = _.inject = reduce = (obj, iterator, memo, context) ->
     return if memo is void
     then obj.reduce iterator
     else obj.reduce iterator, memo
-  initial = memo !== void
+  initial = memo isnt void
   for value, index of obj
     memo = if initial || index
     then iterator.call context, memo, value, index, obj
@@ -209,7 +208,7 @@ _.lastIndexOf = (array, item) ->
   if nativeLastIndexOf && array.lastIndexOf is nativeLastIndexOf
     return array.lastIndexOf item
   i = array.length
-  continue while i-- && array[i] !== item
+  continue while i-- && array[i] isnt item
   i
 
 _.range = (start, stop, step = 1) ->
@@ -234,7 +233,7 @@ _.bindAll = (obj) ->
   names = if arguments.length < 2
   then functions obj
   else __slice.call arguments, 1
-  each names, -> obj[it] = bind obj[it], obj
+  obj[name] = bind obj[name], obj for name of names
   obj
 
 _.memoize = (func, hasher = identity, memo = {}) -> ->
@@ -291,7 +290,7 @@ _.isEqual = (a, b) ->
   true
 
 _.isEmpty = ->
-  return it.length is 0 if isString it
+  return not it.length if isString it
   return false for key in it
   true
 

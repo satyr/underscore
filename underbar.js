@@ -1,4 +1,9 @@
 (function(){
+  /*
+  Underbar.co, a port of http://documentcloud.github.com/underscore in Coco.
+  (c) 2010 Jeremy Ashkenas, DocumentCloud Inc. + satyr
+  Distributed under the MIT license.
+  */
   var addToWrapper, bind, breaker, each, filter, flatten, functions, idCounter, identity, isArguments, isArray, isDate, isFunction, isNaN, isNumber, isRegExp, isString, keys, map, nativeEvery, nativeFilter, nativeForEach, nativeLastIndexOf, nativeMap, nativeReduce, nativeReduceRight, nativeSome, pluck, previousUnderbar, reduce, root, toArray, toString, unshift, wrapper, _ref, __owns = Object.prototype.hasOwnProperty, __indexOf = Array.prototype.indexOf || function(item){
     for (var i = 0, l = this.length; i < l; ++i) if (this[i] === item) return i;
     return -1;
@@ -7,18 +12,12 @@
     for (var key in src) if (own.call(src, key)) obj[key] = src[key];
     return obj;
   };
-  /*
-  Underbar.co, a port of http://documentcloud.github.com/underscore in Coco.
-  (c) 2010 Jeremy Ashkenas, DocumentCloud Inc. + satyr
-  Distributed under the MIT license.
-  */
   _.VERSION = '0.1.1.2';
   function _(it){
     return new wrapper(it);
   }
-  root = this;
-  previousUnderbar = root._;
-  root._ = _;
+  previousUnderbar = this._;
+  root = (this._ = _, this);
   if (typeof exports != "undefined" && exports !== null) {
     exports._ = _;
   }
@@ -355,11 +354,12 @@
     };
   };
   _.bindAll = function(obj){
-    var names;
+    var name, names, _i, _len;
     names = arguments.length < 2 ? functions(obj) : __slice.call(arguments, 1);
-    each(names, function(it){
-      return obj[it] = bind(obj[it], obj);
-    });
+    for (_i = 0, _len = names.length; _i < _len; ++_i) {
+      name = names[_i];
+      obj[name] = bind(obj[name], obj);
+    }
     return obj;
   };
   _.memoize = function(func, hasher, memo){
@@ -492,7 +492,7 @@
   _.isEmpty = function(it){
     var key, _ref;
     if (isString(it)) {
-      return it.length === 0;
+      return !it.length;
     }
     for (key in _ref = it) if (__owns.call(_ref, key)) {
       return false;
@@ -589,13 +589,15 @@
     var _ref;
     function wrapper(_arg){
       this._wrapped = _arg;
-    }
-    wrapper.name = "wrapper";
-    _ref = wrapper.prototype, _ref.value = function(){
+    } wrapper.name = "wrapper";
+    _ref = wrapper.prototype;
+    _ref.value = function(){
       return this._wrapped;
-    }, _ref.chain = function(){
+    };
+    _ref.chain = function(){
       return this._chain = this;
-    }, _ref._result = function(it){
+    };
+    _ref._result = function(it){
       if (this._chain) {
         this._wrapped = it;
         return this;
