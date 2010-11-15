@@ -1,0 +1,391 @@
+###
+Underbar.co, a port of http://documentcloud.github.com/underscore in Coco.
+(c) 2010 Jeremy Ashkenas, DocumentCloud Inc. + satyr
+Distributed under the MIT license.
+###
+
+_.VERSION = '0.1.1.2'
+
+function _ -> new wrapper it
+
+
+# Baseline setup
+# --------------
+
+root = this
+
+previousUnderbar = root._
+
+root     ._ = _
+exports ?._ = _
+
+breaker = StopIteration ? '__break__'
+
+{toString} = Object::
+{
+  unshift
+  forEach     : nativeForEach
+  map         : nativeMap
+  reduce      : nativeReduce
+  reduceRight : nativeReduceRight
+  filter      : nativeFilter
+  every       : nativeEvery
+  some        : nativeSome
+  lastIndexOf : nativeLastIndexOf
+} = Array::
+
+
+# Collection Functions
+# --------------------
+
+_.each = _.forEach = each = (obj, iterator, context) ->
+  try
+    if nativeForEach && obj.forEach is nativeForEach
+    then obj.forEach iterator, context
+    else if isNumber obj.length
+    then iterator.call context, obj[i], i, obj for i from 0 til obj.length
+    else iterator.call context, obj[k], k, obj for k in obj
+  catch e
+    throw e unless e is breaker
+  obj
+
+_.map = map = (obj, iterator, context) ->
+  return obj.map iterator, context if nativeMap && obj.map is nativeMap
+  results = []
+  each obj, (value, index, list) ->
+    results[*] = iterator.call context, value, index, list
+  results
+
+_.reduce = _.foldl = _.inject = reduce = (obj, iterator, memo, context) ->
+  if nativeReduce && obj.reduce is nativeReduce
+    iterator = bind iterator, context if context
+    return if memo is void
+    then obj.reduce iterator
+    else obj.reduce iterator, memo
+  initial = memo !== void
+  for value, index of obj
+    memo = if initial || index
+    then iterator.call context, memo, value, index, obj
+    else value
+  memo
+
+_.reduceRight = _.foldr = (obj, iterator, memo, context) ->
+  if nativeReduceRight && obj.reduceRight is nativeReduceRight
+    iterator = bind iterator, context if context
+    return if memo is void
+    then obj.reduceRight iterator
+    else obj.reduceRight iterator, memo
+  reversed = (if isArray obj then obj.slice() else toArray obj).reverse()
+  reduce reversed, iterator, memo, context
+
+_.find = _.detect = (obj, iterator, context) ->
+  result = void
+  each obj, (value, index, list) ->
+    if iterator.call context, value, index, list
+      result := value
+      throw breaker
+  result
+
+_.filter = _.select = filter = (obj, iterator, context) ->
+  if nativeFilter && obj.filter is nativeFilter
+    return obj.filter iterator, context
+  results = []
+  each obj, (value, index, list) ->
+    results[*] = value if iterator.call context, value, index, list
+  results
+
+_.reject = (obj, iterator, context) ->
+  results = []
+  each obj, (value, index, list) ->
+    results[*] = value unless iterator.call context, value, index, list
+  results
+
+_.every = _.all = (obj, iterator = identity, context) ->
+  if nativeEvery && obj.every is nativeEvery
+    return obj.every iterator, context
+  for value, index of obj
+    return false unless iterator.call context, value, index, obj
+  true
+
+_.some = _.any = (obj, iterator = identity, context) ->
+  return obj.some iterator, context if nativeSome && obj.some is nativeSome
+  for value, index of obj
+    return true if iterator.call context, value, index, obj
+  false
+
+_.include = _.contains = (obj, target) ->
+  return target of obj if isArray obj
+  return true for key, val in obj when target is val
+  false
+
+_.invoke = (obj, method, args...) ->
+  map obj, ->
+    if method then it[method].apply it, args else it.apply null, args
+
+_.pluck = pluck = (obj, key) -> map obj, -> it[key]
+
+_.max = (obj, iterator, context) ->
+  return Math.max obj... if !iterator && isArray obj
+  result = computed: -1/0
+  each obj, (value, index, list) ->
+    computed = if iterator
+    then iterator.call context, value, index, list
+    else value
+    computed > result.computed && result import {computed, value}
+  result.value
+
+_.min = (obj, iterator, context) ->
+  return Math.min obj... if !iterator && isArray obj
+  result = computed: 1/0
+  each obj, (value, index, list) ->
+    computed = if iterator
+    then iterator.call context, value, index, list
+    else value
+    computed < result.computed && result import {computed, value}
+  result.value
+
+_.sortBy = (obj, iterator, context) ->
+  pluck map(obj, (value, index, list) ->
+    {value, key: iterator.call context, value, index, list}
+  ).sort(({key: a}, {key: b}) -> if a < b then -1 else a > b), 'value'
+
+_.sortedIndex = (array, obj, iterator = identity) ->
+  low = 0; high = array.length
+  while low < high
+    mid = low + high >> 1
+    if iterator(array[mid]) < iterator(obj) then low = mid + 1 else high = mid
+  low
+
+_.toArray = toArray = ->
+  return []            if !it
+  return it.toArray()  if it.toArray
+  return it            if isArray it
+  return [it...]       if isArguments it
+  _.values it
+
+_.size = -> toArray(it).length
+
+
+# Array Functions
+# ---------------
+
+_.first = _.head = (array, n, guard) ->
+  if n && !guard then __slice.call array, 0, n else array[0]
+
+_.rest = _.tail = (array, index, guard) ->
+  __slice.call array, if index? and not guard then index else 1
+
+_.last = -> it[*-1]
+
+_.compact = -> filter it, identity
+
+_.flatten = flatten = ->
+  reduce it, (memo, value) ->
+    return memo.concat flatten value if isArray value
+    memo[*] = value
+    memo
+  , []
+
+_.without = (array, values...) -> filter array, -> it not of values
+
+_.uniq = _.unique = (array, isSorted) ->
+  reduce array, (memo, el, i) ->
+    unless i and (if isSorted then memo[*-1] is el else el of memo)
+      memo[*] = el
+    memo
+  , []
+
+_.intersect = (array, rest...) ->
+  filter _.uniq(array), (item) -> _.every rest, -> item of it
+
+_.zip = (args...) ->
+  results = Array length = Math.max pluck(args, 'length')...
+  results[i] = pluck args, i for i from 0 til length
+  results
+
+_.indexOf = (array, item) -> __indexOf.call array, item
+
+_.lastIndexOf = (array, item) ->
+  if nativeLastIndexOf && array.lastIndexOf is nativeLastIndexOf
+    return array.lastIndexOf item
+  i = array.length
+  continue while i-- && array[i] !== item
+  i
+
+_.range = (start, stop, step = 1) ->
+  if arguments.length < 2
+    stop  = start
+    start = 0
+  idx   = 0
+  range = Array len = Math.max 0, Math.ceil (stop - start) / step
+  while idx < len
+    range[idx++] = start
+    start += step
+  range
+
+
+# Function (ahem) Functions
+# ------------------
+
+_.bind = bind = (func, obj = {}, args...) ->
+  -> func.apply obj, args.concat arguments...
+
+_.bindAll = (obj) ->
+  names = if arguments.length < 2
+  then functions obj
+  else __slice.call arguments, 1
+  each names, -> obj[it] = bind obj[it], obj
+  obj
+
+_.memoize = (func, hasher = identity, memo = {}) -> ->
+  if __owns.call memo, key = hasher.apply this, arguments
+  then memo[key]
+  else memo[key] = func.apply this, arguments
+
+_.delay = (func, wait, args...) -> setTimeout (-> func args...), wait
+
+_.defer = (func, args...) -> setTimeout -> func args...
+
+_.wrap = (func, wrapper) -> -> wrapper func, arguments...
+
+_.compose = (funcs...) -> (args...) ->
+  args = [fn.apply this, args] for fn of funcs by -1
+  args[0]
+
+
+# Object Functions
+# ----------------
+
+_.keys = keys = Object.keys || -> key for key in it
+
+_.values = -> map it, identity
+
+_.functions = _.methods = functions = (obj) ->
+  filter(keys(obj), -> isFunction obj[it]).sort()
+
+_.extend = (obj, args...) ->
+  continue for key, obj[key] in it for it of args
+  obj
+
+_.clone = -> if isArray it then it.slice() else {it...}
+
+_.tap = (obj, interceptor) -> interceptor obj; obj
+
+_.isEqual = (a, b) ->
+  return true if a is b
+  atype = typeof a
+  btype = typeof b
+  return false if atype != btype
+  return true if a == b
+  return false if !a && b || a && !b
+  return a.isEqual b if a.isEqual
+  return a.getTime() is b.getTime() if isDate(a) && isDate(b)
+  return false if isNaN(a) && isNaN(b)
+  return '' + a is '' + b if isRegExp(a) && isRegExp(b)
+  return false unless atype is 'object'
+  return false if a.length && a.length isnt b.length
+  aKeys = keys a
+  bKeys = keys b
+  return false if aKeys.length != bKeys.length
+  return false for all key in a when key not in b || not _.isEqual a[key], b[key]
+  true
+
+_.isEmpty = ->
+  return it.length is 0 if isString it
+  return false for key in it
+  true
+
+_.isElement = -> it?.nodeType is 1
+
+_.isArray = isArray = Array.isArray || -> '[object Array]' is toString.call it
+
+_.isFunction = isFunction = -> '[object Function]' is toString.call it
+
+_.isNumber = isNumber = -> it is +it || '[object Number]' is toString.call it
+
+_.isBoolean = -> it of [true, false]
+
+_.isString = isString = -> '[object String]' is toString.call it
+_.isRegExp = isRegExp = -> '[object RegExp]' is toString.call it
+_.isDate   = isDate   = -> '[object Date]'   is toString.call it
+
+_.isNaN       = isNaN = -> it isnt it
+_.isNull      =         -> it is null
+_.isUndefined =         -> it is void
+
+# FIXME: broken in strict mode
+_.isArguments = isArguments = -> !!it?.callee
+
+
+# Utility Functions
+# -----------------
+
+_.noConflict = ->
+  root._ = previousUnderbar
+  this
+
+_.identity = identity = -> it
+
+_.times = (n, iterator, context) -> iterator.call context, i for i from 0 til n
+
+_.breakLoop = -> throw breaker
+
+_.mixin = (obj) -> each functions(obj), -> addToWrapper it, _[it] = obj[it]
+
+idCounter = 0
+_.uniqueId = (prefix = 0) -> prefix + ++idCounter
+
+_.templateSettings =
+  evaluate    : /<%([\s\S]+?)%>/g,
+  interpolate : /<%=([\s\S]+?)%>/g
+
+_.template = (str, data) ->
+  c = _.templateSettings
+  str.=replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace c.interpolate, (match, code) ->
+        "'," + code.replace(/\\'/g, "'") + ",'"
+  if c.evaluate
+    str.=replace c.evaluate, (match, code) ->
+      "');" + code.replace(/\\'/g, "'").replace(/[\r\n\t]/g, ' ') + "__p.push('"
+  str.=replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n')
+      .replace(/\t/g, '\\t')
+  func = Function 'obj', """
+    var __p = [], print = function(){ __p.push.apply(__p, arguments) }
+    with(obj || {}){ __p.push('#{str}') }
+    return __p.join('')
+  """
+  if data then func data else func
+
+
+# The OOP Wrapper
+# ---------------
+
+class wrapper
+  (@_wrapped) ->
+
+  value: -> @_wrapped
+  chain: -> @_chain = this
+
+  _result: ->
+    if @_chain
+    then @_wrapped = it; this
+    else it
+
+addToWrapper = (name, func) ->
+  wrapper::[name] = (args...) ->
+    unshift.call args, @_wrapped
+    @_result func.apply _, args
+
+_.mixin _
+
+_:: = wrapper::
+
+each <[ pop push reverse shift sort splice unshift ]>, (name) ->
+  method = Array::[name]
+  wrapper::[name] = -> method.apply @_wrapped, arguments; @_result @_wrapped
+
+each <[ concat join slice ]>, (name) ->
+  method = Array::[name]
+  wrapper::[name] = -> @_result method.apply @_wrapped, arguments
