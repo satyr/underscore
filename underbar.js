@@ -62,13 +62,13 @@
       if (context) {
         iterator = bind(iterator, context);
       }
-      if (memo === void 0) {
+      if (memo === void 8) {
         return obj.reduce(iterator);
       } else {
         return obj.reduce(iterator, memo);
       }
     }
-    initial = memo !== void 0;
+    initial = memo !== void 8;
     for (index = 0, _len = obj.length; index < _len; ++index) {
       value = obj[index];
       memo = initial || index ? iterator.call(context, memo, value, index, obj) : value;
@@ -81,7 +81,7 @@
       if (context) {
         iterator = bind(iterator, context);
       }
-      if (memo === void 0) {
+      if (memo === void 8) {
         return obj.reduceRight(iterator);
       } else {
         return obj.reduceRight(iterator, memo);
@@ -92,7 +92,7 @@
   };
   _.find = _.detect = function(obj, iterator, context){
     var result;
-    result = void 0;
+    result = void 8;
     each(obj, function(value, index, list){
       if (iterator.call(context, value, index, list)) {
         result = value;
@@ -311,7 +311,7 @@
   };
   _.zip = function(){
     var args, i, length, results;
-    args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    args = __slice.call(arguments);
     results = Array(length = Math.max.apply(Math, pluck(args, 'length')));
     for (i = 0; i < length; ++i) {
       results[i] = pluck(args, i);
@@ -395,10 +395,10 @@
   };
   _.compose = function(){
     var funcs;
-    funcs = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+    funcs = __slice.call(arguments);
     return function(){
       var args, fn, _i, _ref;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      args = __slice.call(arguments);
       for (_i = (_ref = funcs).length - 1; _i >= 0; --_i) {
         fn = _ref[_i];
         args = [fn.apply(this, args)];
@@ -530,7 +530,7 @@
     return it === null;
   };
   _.isUndefined = function(it){
-    return it === void 0;
+    return it === void 8;
   };
   _.isArguments = isArguments = function(it){
     return !!(typeof it != "undefined" && it !== null ? it.callee : void 0);
@@ -610,26 +610,24 @@
   addToWrapper = function(name, func){
     return wrapper.prototype[name] = function(){
       var args;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      args = __slice.call(arguments);
       unshift.call(args, this._wrapped);
       return this._result(func.apply(_, args));
     };
   };
   _.mixin(_);
   _.prototype = wrapper.prototype;
-  each(["pop", "push", "reverse", "shift", "sort", "splice", "unshift"], function(name){
-    var method;
-    method = Array.prototype[name];
-    return wrapper.prototype[name] = function(){
+  each(["pop", "push", "reverse", "shift", "sort", "splice", "unshift"], function(method){
+    wrapper.prototype[method] = function(){
       method.apply(this._wrapped, arguments);
       return this._result(this._wrapped);
     };
-  });
-  each(["concat", "join", "slice"], function(name){
-    var method;
-    method = Array.prototype[name];
-    return wrapper.prototype[name] = function(){
+    return method = this[method], this;
+  }, Array.prototype);
+  each(["concat", "join", "slice"], function(method){
+    wrapper.prototype[method] = function(){
       return this._result(method.apply(this._wrapped, arguments));
     };
-  });
+    return method = this[method], this;
+  }, Array.prototype);
 }).call(this);

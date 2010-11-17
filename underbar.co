@@ -237,9 +237,9 @@ _.bindAll = (obj) ->
   obj
 
 _.memoize = (func, hasher = identity, memo = {}) -> ->
-  if __owns.call memo, key = hasher.apply this, arguments
+  if __owns.call memo, key = hasher ...
   then memo[key]
-  else memo[key] = func.apply this, arguments
+  else memo[key] = func ...
 
 _.delay = (func, wait, args...) -> setTimeout (-> func args...), wait
 
@@ -340,16 +340,13 @@ _.templateSettings =
 
 _.template = (str, data) ->
   c = _.templateSettings
-  str.=replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'")
+  str.=replace(/\\/g, '\\\\').replace(/'/g, "\\'")
       .replace c.interpolate, (match, code) ->
         "'," + code.replace(/\\'/g, "'") + ",'"
   if c.evaluate
     str.=replace c.evaluate, (match, code) ->
       "');" + code.replace(/\\'/g, "'").replace(/[\r\n\t]/g, ' ') + "__p.push('"
-  str.=replace(/\r/g, '\\r')
-      .replace(/\n/g, '\\n')
-      .replace(/\t/g, '\\t')
+  str.=replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\t/g, '\\t')
   func = Function 'obj', """
     var __p = [], print = function(){ __p.push.apply(__p, arguments) }
     with(obj || {}){ __p.push('#{str}') }
@@ -381,10 +378,12 @@ _.mixin _
 
 _:: = wrapper::
 
-each <[ pop push reverse shift sort splice unshift ]>, (name) ->
-  method = Array::[name]
-  wrapper::[name] = -> method.apply @_wrapped, arguments; @_result @_wrapped
+each <[ pop push reverse shift sort splice unshift ]>, (method) ->
+  wrapper::[method] = -> method.apply @_wrapped, arguments; @_result @_wrapped
+  {(method)} = this
+, Array::
 
-each <[ concat join slice ]>, (name) ->
-  method = Array::[name]
-  wrapper::[name] = -> @_result method.apply @_wrapped, arguments
+each <[ concat join slice ]>, (method) ->
+  wrapper::[method] = -> @_result method.apply @_wrapped, arguments
+  {(method)} = this
+, Array::
