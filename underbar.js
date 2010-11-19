@@ -4,10 +4,9 @@
   (c) 2010 Jeremy Ashkenas, DocumentCloud Inc. + satyr
   Distributed under the MIT license.
   */
-  var addToWrapper, bind, breaker, each, filter, flatten, functions, idCounter, identity, isArguments, isArray, isDate, isFunction, isNaN, isNumber, isRegExp, isString, keys, map, nativeEvery, nativeFilter, nativeForEach, nativeLastIndexOf, nativeMap, nativeReduce, nativeReduceRight, nativeSome, pluck, previousUnderbar, reduce, root, toArray, toString, unshift, wrapper, _ref, __owns = Object.prototype.hasOwnProperty, __indexOf = Array.prototype.indexOf || function(item){
-    for (var i = 0, l = this.length; i < l; ++i) if (this[i] === item) return i;
-    return -1;
-  }, __slice = Array.prototype.slice, __import = function(obj, src){
+  var addToWrapper, bind, breaker, each, filter, flatten, functions, idCounter, identity, isArguments, isArray, isDate, isFunction, isNaN, isNumber, isRegExp, isString, keys, map, nativeEvery, nativeFilter, nativeForEach, nativeLastIndexOf, nativeMap, nativeReduce, nativeReduceRight, nativeSome, pluck, previousUnderbar, reduce, root, toArray, toString, unshift, wrapper, _ref, __owns = Object.prototype.hasOwnProperty, __indexOf = Array.prototype.indexOf || function(x){
+    for (var i = this.length; i-- && this[i] !== x;); return i;
+  }, __slice = Array.prototype.slice, __bind = function(me, fn){ return function(){ return fn.apply(me, arguments); }; }, __import = function(obj, src){
     var own = Object.prototype.hasOwnProperty;
     for (var key in src) if (own.call(src, key)) obj[key] = src[key];
     return obj;
@@ -159,8 +158,9 @@
     }
     for (key in obj) if (__owns.call(obj, key)) {
       val = obj[key];
-      if (target !== val) continue;
-      return true;
+      if (target === val) {
+        return true;
+      }
     }
     return false;
   };
@@ -358,7 +358,7 @@
     names = arguments.length < 2 ? functions(obj) : __slice.call(arguments, 1);
     for (_i = 0, _len = names.length; _i < _len; ++_i) {
       name = names[_i];
-      obj[name] = bind(obj[name], obj);
+      obj[name] = __bind(obj, obj[name]);
     }
     return obj;
   };
@@ -484,8 +484,9 @@
       return false;
     }
     for (key in a) {
-      if (!(!(key in b) || !_.isEqual(a[key], b[key]))) continue;
-      return false;
+      if (!(key in b) || !_.isEqual(a[key], b[key])) {
+        return false;
+      }
     }
     return true;
   };
@@ -587,8 +588,8 @@
   };
   wrapper = (function(){
     var _ref;
-    function wrapper(_arg){
-      this._wrapped = _arg;
+    function wrapper(_wrapped){
+      this._wrapped = _wrapped;
     } wrapper.name = "wrapper";
     _ref = wrapper.prototype;
     _ref.value = function(){

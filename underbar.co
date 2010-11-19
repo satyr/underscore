@@ -114,7 +114,7 @@ _.some = _.any = (obj, iterator = identity, context) ->
 
 _.include = _.contains = (obj, target) ->
   return target of obj if isArray obj
-  return true for key, val in obj when target is val
+  return true if target is val for key, val in obj
   false
 
 _.invoke = (obj, method, args...) ->
@@ -233,7 +233,7 @@ _.bindAll = (obj) ->
   names = if arguments.length < 2
   then functions obj
   else __slice.call arguments, 1
-  obj[name] = bind obj[name], obj for name of names
+  obj[name] = obj&[name] for name of names
   obj
 
 _.memoize = (func, hasher = identity, memo = {}) -> ->
@@ -286,7 +286,8 @@ _.isEqual = (a, b) ->
   aKeys = keys a
   bKeys = keys b
   return false if aKeys.length != bKeys.length
-  return false for all key in a when key not in b || not _.isEqual a[key], b[key]
+  for all key in a
+    return false if key not in b || not _.isEqual a[key], b[key]
   true
 
 _.isEmpty = ->
