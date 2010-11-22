@@ -43,7 +43,7 @@ _.each = _.forEach = each = (obj, iterator, context) ->
     then obj.forEach iterator, context
     else if isNumber obj.length
     then iterator.call context, obj[i], i, obj for i from 0 til obj.length
-    else iterator.call context, obj[k], k, obj for k in obj
+    else iterator.call context, obj[k], k, obj for own k in obj
   catch e
     throw e unless e is breaker
   obj
@@ -114,7 +114,7 @@ _.some = _.any = (obj, iterator = identity, context) ->
 
 _.include = _.contains = (obj, target) ->
   return target of obj if isArray obj
-  return true if target is val for key, val in obj
+  return true if target is val for own key, val in obj
   false
 
 _.invoke = (obj, method, args...) ->
@@ -255,7 +255,7 @@ _.compose = (funcs...) -> (args...) ->
 # Object Functions
 # ----------------
 
-_.keys = keys = Object.keys || -> key for key in it
+_.keys = keys = Object.keys || -> key for own key in it
 
 _.values = -> map it, identity
 
@@ -263,7 +263,7 @@ _.functions = _.methods = functions = (obj) ->
   filter(keys(obj), -> isFunction obj[it]).sort()
 
 _.extend = (obj, args...) ->
-  continue for key, obj[key] in it for it of args
+  continue for own key, obj[key] in it for it of args
   obj
 
 _.clone = -> if isArray it then it.slice() else {it...}
@@ -286,13 +286,13 @@ _.isEqual = (a, b) ->
   aKeys = keys a
   bKeys = keys b
   return false if aKeys.length != bKeys.length
-  for all key in a
+  for key in a
     return false if key not in b || not _.isEqual a[key], b[key]
   true
 
 _.isEmpty = ->
   return not it.length if isString it
-  return false for key in it
+  return false for own key in it
   true
 
 _.isElement = -> it?.nodeType is 1

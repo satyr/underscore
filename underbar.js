@@ -166,7 +166,7 @@
   };
   _.invoke = function(){
     var args, method, obj;
-    obj = arguments[0], method = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+    obj = arguments[0], method = arguments[1], args = __slice.call(arguments, 2);
     return map(obj, function(it){
       if (method) {
         return it[method].apply(it, args);
@@ -287,7 +287,7 @@
   };
   _.without = function(){
     var array, values;
-    array = arguments[0], values = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    array = arguments[0], values = __slice.call(arguments, 1);
     return filter(array, function(it){
       return __indexOf.call(values, it) < 0;
     });
@@ -302,7 +302,7 @@
   };
   _.intersect = function(){
     var array, rest;
-    array = arguments[0], rest = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    array = arguments[0], rest = __slice.call(arguments, 1);
     return filter(_.uniq(array), function(item){
       return _.every(rest, function(it){
         return __indexOf.call(it, item) >= 0;
@@ -347,7 +347,7 @@
   };
   _.bind = bind = function(){
     var args, func, obj;
-    func = arguments[0], obj = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+    func = arguments[0], obj = arguments[1], args = __slice.call(arguments, 2);
     obj == null && (obj = {});
     return function(){
       return func.apply(obj, args.concat.apply(args, arguments));
@@ -376,14 +376,14 @@
   };
   _.delay = function(){
     var args, func, wait;
-    func = arguments[0], wait = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+    func = arguments[0], wait = arguments[1], args = __slice.call(arguments, 2);
     return setTimeout(function(){
       return func.apply(null, args);
     }, wait);
   };
   _.defer = function(){
     var args, func;
-    func = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    func = arguments[0], args = __slice.call(arguments, 1);
     return setTimeout(function(){
       return func.apply(null, args);
     });
@@ -423,7 +423,7 @@
   };
   _.extend = function(it){
     var args, it, key, obj, _i, _len;
-    obj = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+    obj = arguments[0], args = __slice.call(arguments, 1);
     for (_i = 0, _len = args.length; _i < _len; ++_i) {
       it = args[_i];
       for (key in it) if (__owns.call(it, key)) {
@@ -501,7 +501,7 @@
     return true;
   };
   _.isElement = function(it){
-    return (typeof it != "undefined" && it !== null ? it.nodeType : void 0) === 1;
+    return (typeof it != "undefined" && it !== null ? it.nodeType : void 8) === 1;
   };
   _.isArray = isArray = Array.isArray || function(it){
     return '[object Array]' === toString.call(it);
@@ -534,7 +534,7 @@
     return it === void 8;
   };
   _.isArguments = isArguments = function(it){
-    return !!(typeof it != "undefined" && it !== null ? it.callee : void 0);
+    return !!(typeof it != "undefined" && it !== null ? it.callee : void 8);
   };
   _.noConflict = function(){
     root._ = previousUnderbar;
