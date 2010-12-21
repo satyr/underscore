@@ -4,7 +4,7 @@ Underbar.co, a port of http://documentcloud.github.com/underscore in Coco.
 Distributed under the MIT license.
 ###
 
-_.VERSION = '0.1.1.2'
+_.VERSION = \0.1.1.3
 
 function _ -> new wrapper it
 
@@ -14,13 +14,17 @@ function _ -> new wrapper it
 
 previousUnderbar = @_
 
-root = this import {_}
+root = this
 
-exports?._ = _
+_._ = _
 
-breaker = StopIteration ? '__break__'
+if module?.exports
+then module.exports = _
+else root._ = _
 
-{toString} = Object::
+_.breaker = breaker = {}
+
+{toString, hasOwnProperty} = breaker
 {
   unshift
   forEach     : nativeForEach
@@ -31,28 +35,28 @@ breaker = StopIteration ? '__break__'
   every       : nativeEvery
   some        : nativeSome
   lastIndexOf : nativeLastIndexOf
-} = Array::
+} = []
 
 
 # Collection Functions
 # --------------------
 
 _.each = _.forEach = each = (obj, iterator, context) ->
-  try
-    if nativeForEach && obj.forEach is nativeForEach
-    then obj.forEach iterator, context
-    else if isNumber obj.length
-    then iterator.call context, obj[i], i, obj for i from 0 til obj.length
-    else iterator.call context, obj[k], k, obj for own k in obj
-  catch e
-    throw e unless e is breaker
-  obj
+  if nativeForEach && obj.forEach is nativeForEach
+  then obj.forEach iterator, context
+  else if isNumber obj.length
+    for i from 0 til obj.length
+      return if breaker is iterator.call context, obj[i], i, obj 
+  else
+    for own k in obj
+      return if breaker is iterator.call context, obj[k], k, obj
+  void
 
 _.map = map = (obj, iterator, context) ->
   return obj.map iterator, context if nativeMap && obj.map is nativeMap
   results = []
   each obj, (value, index, list) ->
-    results[*] = iterator.call context, value, index, list
+    results.* = iterator.call context, value, index, list
   results
 
 _.reduce = _.foldl = _.inject = reduce = (obj, iterator, memo, context) ->
@@ -82,7 +86,7 @@ _.find = _.detect = (obj, iterator, context) ->
   each obj, (value, index, list) ->
     if iterator.call context, value, index, list
       result := value
-      throw breaker
+      breaker
   result
 
 _.filter = _.select = filter = (obj, iterator, context) ->
@@ -117,14 +121,13 @@ _.include = _.contains = (obj, target) ->
   return true if target is val for own key, val in obj
   false
 
-_.invoke = (obj, method, args...) ->
-  map obj, ->
-    if method then it[method].apply it, args else it.apply null, args
+_.invoke = (obj, method, ...args) ->
+  map obj, -> if method then it[method] ...args else it ...args
 
 _.pluck = pluck = (obj, key) -> map obj, -> it[key]
 
 _.max = (obj, iterator, context) ->
-  return Math.max obj... if !iterator && isArray obj
+  return Math.max ...obj if !iterator && isArray obj
   result = computed: -1/0
   each obj, (value, index, list) ->
     computed = if iterator
@@ -134,7 +137,7 @@ _.max = (obj, iterator, context) ->
   result.value
 
 _.min = (obj, iterator, context) ->
-  return Math.min obj... if !iterator && isArray obj
+  return Math.min ...obj if !iterator && isArray obj
   result = computed: 1/0
   each obj, (value, index, list) ->
     computed = if iterator
@@ -146,7 +149,7 @@ _.min = (obj, iterator, context) ->
 _.sortBy = (obj, iterator, context) ->
   pluck map(obj, (value, index, list) ->
     {value, key: iterator.call context, value, index, list}
-  ).sort(({key: a}, {key: b}) -> if a < b then -1 else a > b), 'value'
+  ).sort(({key: a}, {key: b}) -> if a < b then -1 else a > b), \value
 
 _.sortedIndex = (array, obj, iterator = identity) ->
   low = 0; high = array.length
@@ -159,7 +162,7 @@ _.toArray = toArray = ->
   return []            if !it
   return it.toArray()  if it.toArray
   return it            if isArray it
-  return [it...]       if isArguments it
+  return [...it]       if isArguments it
   _.values it
 
 _.size = -> toArray(it).length
@@ -169,7 +172,7 @@ _.size = -> toArray(it).length
 # ---------------
 
 _.first = _.head = (array, n, guard) ->
-  if n && !guard then __slice.call array, 0, n else array[0]
+  if n && !guard then __slice.call array, 0, n else array.0
 
 _.rest = _.tail = (array, index, guard) ->
   __slice.call array, if index? and not guard then index else 1
@@ -185,7 +188,7 @@ _.flatten = flatten = ->
     memo
   , []
 
-_.without = (array, values...) -> filter array, -> it not of values
+_.without = (array, ...values) -> filter array, -> it not of values
 
 _.uniq = _.unique = (array, isSorted) ->
   reduce array, (memo, el, i) ->
@@ -194,11 +197,11 @@ _.uniq = _.unique = (array, isSorted) ->
     memo
   , []
 
-_.intersect = (array, rest...) ->
+_.intersect = (array, ...rest) ->
   filter _.uniq(array), (item) -> _.every rest, -> item of it
 
-_.zip = (args...) ->
-  results = Array length = Math.max pluck(args, 'length')...
+_.zip = (...args) ->
+  results = Array length = Math.max ...pluck args, \length
   results[i] = pluck args, i for i from 0 til length
   results
 
@@ -226,30 +229,42 @@ _.range = (start, stop, step = 1) ->
 # Function (ahem) Functions
 # ------------------
 
-_.bind = bind = (func, obj = {}, args...) ->
-  -> func.apply obj, args.concat arguments...
+_.bind = bind = (func, obj = {}, ...args) ->
+  -> func.apply obj, args.concat ...arguments
 
 _.bindAll = (obj) ->
   names = if arguments.length < 2
   then functions obj
   else __slice.call arguments, 1
-  obj[name] = obj&[name] for name of names
+  obj[name] = obj&.[name] for name of names
   obj
 
 _.memoize = (func, hasher = identity, memo = {}) -> ->
-  if __owns.call memo, key = hasher ...
+  if hasOwnProperty.call memo, key = hasher ...
   then memo[key]
   else memo[key] = func ...
 
-_.delay = (func, wait, args...) -> setTimeout (-> func args...), wait
+_.delay = (func, wait, ...args) -> setTimeout (-> func ...args), wait
 
-_.defer = (func, args...) -> setTimeout -> func args...
+_.defer = (func, ...args) -> setTimeout -> func ...args
 
-_.wrap = (func, wrapper) -> -> wrapper func, arguments...
+_.throttle = (func, wait) -> limit func, wait
+_.debounce = (func, wait) -> limit func, wait, true
 
-_.compose = (funcs...) -> (args...) ->
+function limit (func, wait, debounce, timeout) -> ->
+  args = arguments;
+  function throttler =>
+    timeout := null
+    func.apply this, args
+  clearTimeout timeout                  if debounce
+  timeout := setTimeout throttler, wait if debounce || !timeout
+  void
+
+_.wrap = (func, wrapper) -> -> wrapper func, ...arguments
+
+_.compose = (...funcs) -> (...args) ->
   args = [fn.apply this, args] for fn of funcs by -1
-  args[0]
+  args.0
 
 
 # Object Functions
@@ -262,11 +277,11 @@ _.values = -> map it, identity
 _.functions = _.methods = functions = (obj) ->
   filter(keys(obj), -> isFunction obj[it]).sort()
 
-_.extend = (obj, args...) ->
+_.extend = (obj, ...args) ->
   continue for own key, obj[key] in it for it of args
   obj
 
-_.clone = -> if isArray it then it.slice() else {it...}
+_.clone = -> if isArray it then it.slice() else {...it}
 
 _.tap = (obj, interceptor) -> interceptor obj; obj
 
@@ -281,7 +296,7 @@ _.isEqual = (a, b) ->
   return a.getTime() is b.getTime() if isDate(a) && isDate(b)
   return false if isNaN(a) && isNaN(b)
   return '' + a is '' + b if isRegExp(a) && isRegExp(b)
-  return false unless atype is 'object'
+  return false unless atype is \object
   return false if a.length && a.length isnt b.length
   aKeys = keys a
   bKeys = keys b
@@ -301,7 +316,7 @@ _.isArray = isArray = Array.isArray || -> '[object Array]' is toString.call it
 
 _.isFunction = isFunction = -> '[object Function]' is toString.call it
 
-_.isNumber = isNumber = -> it is +it || '[object Number]' is toString.call it
+_.isNumber = isNumber = -> it is it && '[object Number]' is toString.call it
 
 _.isBoolean = -> it of [true, false]
 
@@ -328,8 +343,6 @@ _.identity = identity = -> it
 
 _.times = (n, iterator, context) -> iterator.call context, i for i from 0 til n
 
-_.breakLoop = -> throw breaker
-
 _.mixin = (obj) -> each functions(obj), -> addToWrapper it, _[it] = obj[it]
 
 idCounter = 0
@@ -341,14 +354,14 @@ _.templateSettings =
 
 _.template = (str, data) ->
   c = _.templateSettings
-  str.=replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  str.=replace(/\\/g, \\\\\).replace(/'/g, \\\')
       .replace c.interpolate, (match, code) ->
-        "'," + code.replace(/\\'/g, "'") + ",'"
+        "'," + code.replace(/\\'/g, \') + ",'"
   if c.evaluate
     str.=replace c.evaluate, (match, code) ->
-      "');" + code.replace(/\\'/g, "'").replace(/[\r\n\t]/g, ' ') + "__p.push('"
-  str.=replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/\t/g, '\\t')
-  func = Function 'obj', """
+      "');" + code.replace(/\\'/g, \').replace(/[\r\n\t]/g, ' ') + "__p.push('"
+  str.=replace(/\r/g, \\\r).replace(/\n/g, \\\n).replace(/\t/g, \\\t)
+  func = Function \obj, """
     var __p = [], print = function(){ __p.push.apply(__p, arguments) }
     with(obj || {}){ __p.push('#{str}') }
     return __p.join('')
@@ -359,32 +372,28 @@ _.template = (str, data) ->
 # The OOP Wrapper
 # ---------------
 
-class wrapper
-  (@_wrapped) ->
+function wrapper (@_wrapped) ->
+
+wrapper:: = _:: import
 
   value: -> @_wrapped
   chain: -> @_chain = this
 
-  _result: ->
-    if @_chain
-    then @_wrapped = it; this
-    else it
+  _result: -> if @_chain then @_wrapped = it; this else it
 
 addToWrapper = (name, func) ->
-  wrapper::[name] = (args...) ->
+  wrapper::[name] = (...args) ->
     unshift.call args, @_wrapped
     @_result func.apply _, args
 
 _.mixin _
 
-_:: = wrapper::
-
 each <[ pop push reverse shift sort splice unshift ]>, (method) ->
-  wrapper::[method] = -> method.apply @_wrapped, arguments; @_result @_wrapped
+  _::[method] = -> method.apply @_wrapped, arguments; @_result @_wrapped
   {(method)} = this
 , Array::
 
 each <[ concat join slice ]>, (method) ->
-  wrapper::[method] = -> @_result method.apply @_wrapped, arguments
+  _::[method] = -> @_result method.apply @_wrapped, arguments
   {(method)} = this
 , Array::
